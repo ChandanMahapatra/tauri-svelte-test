@@ -5,9 +5,10 @@
   let store: Store | null = null;
   
   // Settings state
-  let provider = 'ollama';
+  let provider = 'local-ai';
   let apiKey = '';
-  let model = 'llama3';
+  let apiUrl = 'http://localhost:11434/api/generate';
+  let model = '';
 
   // Initialize store
   onMount(async () => {
@@ -21,10 +22,12 @@
     
     const savedProvider = await store.get('provider');
     const savedApiKey = await store.get('apiKey');
+    const savedApiUrl = await store.get('apiUrl');
     const savedModel = await store.get('model');
     
     if (savedProvider) provider = savedProvider as string;
     if (savedApiKey) apiKey = savedApiKey as string;
+    if (savedApiUrl) apiUrl = savedApiUrl as string;
     if (savedModel) model = savedModel as string;
   }
 
@@ -34,6 +37,7 @@
     
     await store.set('provider', provider);
     await store.set('apiKey', apiKey);
+    await store.set('apiUrl', apiUrl);
     await store.set('model', model);
     await store.save();
     
@@ -47,7 +51,8 @@
   <div class="form-group">
     <label for="provider">Provider:</label>
     <select id="provider" bind:value={provider}>
-      <option value="ollama">Ollama</option>
+      <option value="local-ai">Local AI</option>
+      <option value="lm-studio">LM Studio</option>
       <option value="openai">OpenAI</option>
     </select>
   </div>
@@ -55,24 +60,38 @@
   {#if provider === 'openai'}
     <div class="form-group">
       <label for="api-key">API Key:</label>
-      <input 
-        type="password" 
-        id="api-key" 
-        bind:value={apiKey} 
+      <input
+        type="password"
+        id="api-key"
+        bind:value={apiKey}
         placeholder="Enter your OpenAI API key"
       />
     </div>
   {/if}
   
-  <div class="form-group">
-    <label for="model">Model:</label>
-    <input 
-      type="text" 
-      id="model" 
-      bind:value={model} 
-      placeholder="Enter model name (e.g., gpt-4o-mini, llama3)"
-    />
-  </div>
+  {#if provider === 'local-ai' || provider === 'lm-studio'}
+    <div class="form-group">
+      <label for="api-url">API URL:</label>
+      <input
+        type="text"
+        id="api-url"
+        bind:value={apiUrl}
+        placeholder="Enter API URL (e.g., http://localhost:11434/api/generate)"
+      />
+    </div>
+  {/if}
+  
+  {#if provider === 'openai' || provider === 'lm-studio'}
+    <div class="form-group">
+      <label for="model">Model:</label>
+      <input
+        type="text"
+        id="model"
+        bind:value={model}
+        placeholder="Enter model name (e.g., gpt-4o-mini, llama3)"
+      />
+    </div>
+  {/if}
   
   <button on:click={saveSettings} class="save-button">Save Settings</button>
 </div>
