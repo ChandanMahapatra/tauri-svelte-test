@@ -24,6 +24,7 @@
     "@fontsource/ibm-plex-sans": "^5.2.6",
     "@tauri-apps/cli": "^2.8.1",
     "@tauri-apps/plugin-store": "^2.4.0",
+    "bits-ui": "^2.9.4",
     "marked": "^16.2.0"
   }
 }

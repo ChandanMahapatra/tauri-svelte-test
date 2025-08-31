@@ -1,77 +1,31 @@
-(function() {
-  let inputArea = document.getElementById("text-area");
-  let text = `The app highlights lengthy, complex sentences and common errors; if you see a yellow sentence, shorten or split it. If you see a red highlight, your sentence is so dense and complicated that your readers will get lost trying to follow its meandering, splitting logic - try editing this sentence to remove the red.
-You can utilize a shorter word in place of a purple one. Mouse over them for hints.
-Adverbs and weakening phrases are helpfully shown in blue. Get rid of them and pick words with force, perhaps.
-Phrases in green have been marked to show passive voice.
-You can format your text with the toolbar.
-Paste in something you're working on and edit away. Or, click the Write button and compose something new.`;
-  inputArea.value = text;
+<script lang="ts">
+  import { analyzeText, data } from '../app-logic';
 
-  let data = {
-    paragraphs: 0,
-    sentences: 0,
-    words: 0,
-    hardSentences: 0,
-    veryHardSentences: 0,
-    adverbs: 0,
-    passiveVoice: 0,
-    complex: 0
-  };
+  export let markdownContent: string = '';
+  export let onIssueHover: (issueType: string) => void = () => {};
+  export let onIssueLeave: () => void = () => {};
+  export let hoveredIssueType: string = '';
 
-  function format() {
-    data = {
-      paragraphs: 0,
-      sentences: 0,
-      words: 0,
-      hardSentences: 0,
-      veryHardSentences: 0,
-      adverbs: 0,
-      passiveVoice: 0,
-      complex: 0
-    };
-    ("use strict");
-    let inputArea = document.getElementById("text-area");
-    let text = inputArea.value;
-    let paragraphs = text.split("\n");
-    let outputArea = document.getElementById("output");
-    let hardSentences = paragraphs.map(p => getDifficultSentences(p));
-    let inP = hardSentences.map(para => `<p>${para}</p>`);
-    data.paragraphs = paragraphs.length;
-    console.log(data);
-    counters();
-    outputArea.innerHTML = inP.join(" ");
-  }
-  window.format = format;
-  format();
-
-  function counters() {
-    document.querySelector("#adverb").innerHTML = `You have used ${
-      data.adverbs
-    } adverb${data.adverbs > 1 ? "s" : ""}. Try to use ${Math.round(
-      data.paragraphs / 3
-    )} or less`;
-    document.querySelector(
-      "#passive"
-    ).innerHTML = `You have used passive voice ${data.passiveVoice} time${
-      data.passiveVoice > 1 ? "s" : ""
-    }. Aim for ${Math.round(data.sentences / 5)} or less.`;
-    document.querySelector("#complex").innerHTML = `${data.complex} phrase${
-      data.complex > 1 ? "s" : ""
-    } could be simplified.`;
-    document.querySelector("#hardSentence").innerHTML = `${
-      data.hardSentences
-    } of ${data.sentences} sentence${
-      data.sentences > 1 ? "s are" : " is"
-    } hard to read`;
-    document.querySelector("#veryHardSentence").innerHTML = `${
-      data.veryHardSentences
-    } of ${data.sentences} sentence${
-      data.sentences > 1 ? "s are" : " is"
-    } very hard to read`;
+  // Helper functions
+  function getSentenceFromParagraph(p: string): string[] {
+    let sentences = p
+      .split(". ")
+      .filter(s => s.length > 0)
+      .map(s => s + ".");
+    return sentences;
   }
 
-  function getDifficultSentences(p) {
+  function calculateLevel(letters: number, words: number, sentences: number): number {
+    if (words === 0 || sentences === 0) {
+      return 0;
+    }
+    let level = Math.round(
+      4.71 * (letters / words) + 0.5 * words / sentences - 21.43
+    );
+    return level <= 0 ? 0 : level;
+  }
+
+  function getDifficultSentences(p: string): string {
     let sentences = getSentenceFromParagraph(p + " ");
     data.sentences += sentences.length;
     let hardOrNot = sentences.map(sent => {
@@ -100,7 +54,7 @@ Paste in something you're working on and edit away. Or, click the Write button a
     return hardOrNot.join(" ");
   }
 
-  function getPassive(sent) {
+  function getPassive(sent: string): string {
     let originalWords = sent.split(" ");
     let words = sent
       .replace(/[^a-z0-9. ]/gi, "")
@@ -115,44 +69,20 @@ Paste in something you're working on and edit away. Or, click the Write button a
     return originalWords.join(" ");
   }
 
-  function checkPrewords(words, originalWords, match) {
+  function checkPrewords(words: string[], originalWords: string[], match: string): string[] {
     let preWords = ["is", "are", "was", "were", "be", "been", "being"];
     let index = words.indexOf(match);
-    if (preWords.indexOf(words[index - 1]) >= 0) {
+    if (index >= 0 && preWords.indexOf(words[index - 1]) >= 0) {
       data.passiveVoice += 1;
-      originalWords[index - 1] =
-        '<span class="passive">' + originalWords[index - 1];
+      originalWords[index - 1] = '<span class="passive">' + originalWords[index - 1];
       originalWords[index] = originalWords[index] + "</span>";
-      let next = checkPrewords(
-        words.slice(index + 1),
-        originalWords.slice(index + 1),
-        match
-      );
-      return [...originalWords.slice(0, index + 1), ...next];
+      return originalWords;
     } else {
       return originalWords;
     }
   }
 
-  function getSentenceFromParagraph(p) {
-    let sentences = p
-      .split(". ")
-      .filter(s => s.length > 0)
-      .map(s => s + ".");
-    return sentences;
-  }
-
-  function calculateLevel(letters, words, sentences) {
-    if (words === 0 || sentences === 0) {
-      return 0;
-    }
-    let level = Math.round(
-      4.71 * (letters / words) + 0.5 * words / sentences - 21.43
-    );
-    return level <= 0 ? 0 : level;
-  }
-
-  function getAdverbs(sentence) {
+  function getAdverbs(sentence: string): string {
     let lyWords = getLyWords();
     return sentence
       .split(" ")
@@ -170,7 +100,7 @@ Paste in something you're working on and edit away. Or, click the Write button a
       .join(" ");
   }
 
-  function getComplex(sentence) {
+  function getComplex(sentence: string): string {
     let words = getComplexWords();
     let wordList = Object.keys(words);
     wordList.forEach(key => {
@@ -179,22 +109,25 @@ Paste in something you're working on and edit away. Or, click the Write button a
     return sentence;
   }
 
-  function findAndSpan(sentence, string, type) {
+  function findAndSpan(sentence: string, string: string, type: string): string {
     let index = sentence.toLowerCase().indexOf(string);
-    let a = { complex: "complex", qualifier: "adverbs" };
     if (index >= 0) {
-      data[a[type]] += 1;
+      if (type === "complex") {
+        data.complex += 1;
+      } else if (type === "qualifier") {
+        data.adverbs += 1; // Using adverbs for qualifier count as in original logic
+      }
       sentence =
         sentence.slice(0, index) +
         `<span class="${type}">` +
         sentence.slice(index, index + string.length) +
         "</span>" +
-        findAndSpan(sentence.slice(index + string.length), string, type);
+        sentence.slice(index + string.length);
     }
     return sentence;
   }
 
-  function getQualifier(sentence) {
+  function getQualifier(sentence: string): string {
     let qualifiers = getQualifyingWords();
     let wordList = Object.keys(qualifiers);
     wordList.forEach(key => {
@@ -203,7 +136,7 @@ Paste in something you're working on and edit away. Or, click the Write button a
     return sentence;
   }
 
-  function getQualifyingWords() {
+  function getQualifyingWords(): Record<string, number> {
     return {
       "i believe": 1,
       "i consider": 1,
@@ -245,7 +178,7 @@ Paste in something you're working on and edit away. Or, click the Write button a
     };
   }
 
-  function getLyWords() {
+  function getLyWords(): Record<string, number> {
     return {
       actually: 1,
       additionally: 1,
@@ -422,7 +355,7 @@ Paste in something you're working on and edit away. Or, click the Write button a
     };
   }
 
-  function getComplexWords() {
+  function getComplexWords(): Record<string, string[]> {
     return {
       "a number of": ["many", "some"],
       abundance: ["enough", "plenty"],
@@ -622,45 +555,287 @@ Paste in something you're working on and edit away. Or, click the Write button a
     };
   }
 
-  function getJustifierWords() {
-    return {
-      "i believe": 1,
-      "i consider": 1,
-      "i don't believe": 1,
-      "i don't consider": 1,
-      "i don't feel": 1,
-      "i don't suggest": 1,
-      "i don't think": 1,
-      "i feel": 1,
-      "i hope to": 1,
-      "i might": 1,
-      "i suggest": 1,
-      "i think": 1,
-      "i was wondering": 1,
-      "i will try": 1,
-      "i wonder": 1,
-      "in my opinion": 1,
-      "is kind of": 1,
-      "is sort of": 1,
-      just: 1,
-      maybe: 1,
-      perhaps: 1,
-      possibly: 1,
-      "we believe": 1,
-      "we consider": 1,
-      "we don't believe": 1,
-      "we don't consider": 1,
-      "we don't feel": 1,
-      "we don't suggest": 1,
-      "we don't think": 1,
-      "we feel": 1,
-      "we hope to": 1,
-      "we might": 1,
-      "we suggest": 1,
-      "we think": 1,
-      "we were wondering": 1,
-      "we will try": 1,
-      "we wonder": 1
-    };
+  // Text analysis functions
+  function getWordCount(text: string): number {
+    return text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
   }
-})();
+
+  function getCharacterCount(text: string): number {
+    return text.length;
+  }
+
+  function getCharacterCountWithoutSpaces(text: string): number {
+    return text.replace(/\s/g, '').length;
+  }
+
+  function getParagraphCount(text: string): number {
+    return text.trim() === '' ? 0 : text.trim().split(/\n\s*\n/).length;
+  }
+
+  function getSentenceCount(text: string): number {
+    // Simple sentence counting - might need refinement for edge cases
+    const sentences = text.match(/[.!?]+/g);
+    return sentences ? sentences.length : 0;
+  }
+
+  function getReadingTime(wordCount: number): string {
+    const wpm = 225; // Average words per minute
+    const minutes = Math.ceil(wordCount / wpm);
+    return `${minutes} min`;
+  }
+
+  // Perform text analysis
+  function performTextAnalysis(text: string): void {
+    analyzeText(text);
+  }
+
+  // Computed values
+  $: wordCount = getWordCount(markdownContent);
+  $: characterCount = getCharacterCount(markdownContent);
+  $: characterCountWithoutSpaces = getCharacterCountWithoutSpaces(markdownContent);
+  $: paragraphCount = getParagraphCount(markdownContent);
+  $: sentenceCount = getSentenceCount(markdownContent);
+  $: readingTime = getReadingTime(wordCount);
+
+  // Perform sophisticated text analysis when markdownContent changes
+  $: if (markdownContent) performTextAnalysis(markdownContent);
+</script>
+
+<div class="text-analysis-panel">
+  <h3>Text Analysis</h3>
+
+  <!-- Basic Statistics -->
+  <div class="stats-section">
+    <h4>Statistics</h4>
+    <div class="stats-grid">
+      <div class="stat-item">
+        <span class="stat-label">Words</span>
+        <span class="stat-value">{wordCount}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Chars</span>
+        <span class="stat-value">{characterCount}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Sentences</span>
+        <span class="stat-value">{sentenceCount}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Reading</span>
+        <span class="stat-value">{readingTime}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advanced Analysis -->
+  <div class="analysis-section">
+    <h4>Issues Found</h4>
+    <div class="issues-list">
+      <div
+        class="issue-item hard"
+        class:highlighted={hoveredIssueType === 'hardSentence'}
+        on:mouseenter={() => onIssueHover('hardSentence')}
+        on:mouseleave={onIssueLeave}
+      >
+        <div class="issue-count">{data.hardSentences}</div>
+        <div class="issue-label">Hard Sentences</div>
+      </div>
+      <div
+        class="issue-item very-hard"
+        class:highlighted={hoveredIssueType === 'veryHardSentence'}
+        on:mouseenter={() => onIssueHover('veryHardSentence')}
+        on:mouseleave={onIssueLeave}
+      >
+        <div class="issue-count">{data.veryHardSentences}</div>
+        <div class="issue-label">Very Hard</div>
+      </div>
+      <div
+        class="issue-item passive"
+        class:highlighted={hoveredIssueType === 'passive'}
+        on:mouseenter={() => onIssueHover('passive')}
+        on:mouseleave={onIssueLeave}
+      >
+        <div class="issue-count">{data.passiveVoice}</div>
+        <div class="issue-label">Passive Voice</div>
+      </div>
+      <div
+        class="issue-item adverb"
+        class:highlighted={hoveredIssueType === 'adverb'}
+        on:mouseenter={() => onIssueHover('adverb')}
+        on:mouseleave={onIssueLeave}
+      >
+        <div class="issue-count">{data.adverbs}</div>
+        <div class="issue-label">Adverbs</div>
+      </div>
+      <div
+        class="issue-item complex"
+        class:highlighted={hoveredIssueType === 'complex'}
+        on:mouseenter={() => onIssueHover('complex')}
+        on:mouseleave={onIssueLeave}
+      >
+        <div class="issue-count">{data.complex}</div>
+        <div class="issue-label">Complex</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .text-analysis-panel {
+    height: 100%;
+    padding: 15px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+  }
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #495057;
+    font-size: 1.1rem;
+    text-align: center;
+  }
+
+  h4 {
+    margin: 15px 0 10px 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stats-section,
+  .analysis-section {
+    margin-bottom: 20px;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+  }
+
+  .stat-label {
+    font-weight: 500;
+    color: #6c757d;
+    font-size: 0.8rem;
+  }
+
+  .stat-value {
+    font-weight: 700;
+    color: #007bff;
+    font-size: 0.9rem;
+  }
+
+  .issues-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .issue-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    transition: background-color 0.2s ease;
+  }
+
+  .issue-item:hover,
+  .issue-item.highlighted {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+  }
+
+  .issue-item.highlighted .issue-count,
+  .issue-item.highlighted .issue-label {
+    color: white;
+  }
+
+  .issue-item.hard {
+    border-left: 3px solid #ffc107;
+  }
+
+  .issue-item.very-hard {
+    border-left: 3px solid #dc3545;
+  }
+
+  .issue-item.passive {
+    border-left: 3px solid #6c757d;
+  }
+
+  .issue-item.adverb {
+    border-left: 3px solid #17a2b8;
+  }
+
+  .issue-item.complex {
+    border-left: 3px solid #28a745;
+  }
+
+  .issue-count {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-right: 10px;
+    min-width: 20px;
+    text-align: center;
+  }
+
+  .issue-item.hard .issue-count {
+    color: #856404;
+  }
+
+  .issue-item.very-hard .issue-count {
+    color: #721c24;
+  }
+
+  .issue-item.passive .issue-count {
+    color: #383d41;
+  }
+
+  .issue-item.adverb .issue-count {
+    color: #0c5460;
+  }
+
+  .issue-item.complex .issue-count {
+    color: #155724;
+  }
+
+  .issue-label {
+    font-weight: 500;
+    color: #495057;
+    font-size: 0.85rem;
+    flex: 1;
+  }
+
+  @media (max-width: 768px) {
+    .text-analysis-panel {
+      padding: 10px;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    h3 {
+      font-size: 1rem;
+    }
+
+    h4 {
+      font-size: 0.8rem;
+    }
+  }
+</style>
