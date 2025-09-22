@@ -3,12 +3,16 @@
   import { Store } from '@tauri-apps/plugin-store';
 
   let store: Store | null = null;
-  
+
   // Settings state
-  let provider = 'local-ai';
+  let provider = 'lm-studio';
   let apiKey = '';
-  let apiUrl = 'http://localhost:11434/api/generate';
-  let model = '';
+  let apiUrl = 'http://localhost:1234/v1/completions';
+  let model = 'mistralai/magistral-small-2509';
+
+  // UI state
+  let saveStatus: 'idle' | 'saving' | 'success' | 'error' = 'idle';
+  let saveMessage = '';
 
   // Initialize store
   onMount(async () => {
@@ -34,14 +38,24 @@
   // Save settings to store
   async function saveSettings() {
     if (!store) return;
-    
-    await store.set('provider', provider);
-    await store.set('apiKey', apiKey);
-    await store.set('apiUrl', apiUrl);
-    await store.set('model', model);
-    await store.save();
-    
-    alert('Settings saved successfully!');
+
+    saveStatus = 'saving';
+    saveMessage = 'Saving settings...';
+
+    try {
+      await store.set('provider', provider);
+      await store.set('apiKey', apiKey);
+      await store.set('apiUrl', apiUrl);
+      await store.set('model', model);
+      await store.save();
+
+      saveStatus = 'success';
+      saveMessage = 'Settings saved successfully!';
+    } catch (error) {
+      saveStatus = 'error';
+      saveMessage = 'Failed to save settings. Please try again.';
+      console.error('Settings save error:', error);
+    }
   }
 </script>
 
@@ -93,7 +107,19 @@
     </div>
   {/if}
   
-  <button on:click={saveSettings} class="save-button">Save Settings</button>
+  <button on:click={saveSettings} class="save-button" disabled={saveStatus === 'saving'}>
+    {#if saveStatus === 'saving'}
+      Saving...
+    {:else}
+      Save Settings
+    {/if}
+  </button>
+
+  {#if saveMessage}
+    <div class="status-message" class:success={saveStatus === 'success'} class:error={saveStatus === 'error'}>
+      {saveMessage}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -139,7 +165,32 @@
     margin-top: 20px;
   }
   
-  .save-button:hover {
+  .save-button:hover:not(:disabled) {
     background-color: #0056b3;
+  }
+
+  .save-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+  }
+
+  .status-message {
+    margin-top: 15px;
+    padding: 10px 15px;
+    border-radius: 4px;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  .status-message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  .status-message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
   }
 </style>
