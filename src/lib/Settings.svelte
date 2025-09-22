@@ -132,6 +132,7 @@
   h2 {
     text-align: center;
     margin-bottom: 30px;
+    color: black;
   }
   
   .form-group {
@@ -142,6 +143,7 @@
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
+    color: black;
   }
   
   select, input {

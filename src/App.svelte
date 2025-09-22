@@ -40,38 +40,7 @@
     hoveredIssueType = "";
   }
 
-  let markdown = `# Welcome to Markdown Editor
-
-## This is a heading
-This is some **bold** text and this is *italic* text.
-
-You can also create lists:
-- Item 1
-- Item 2
-- Item 3
-
-Or numbered lists:
-1. First item
-2. Second item
-3. Third item
-
-> This is a blockquote
-
-\`\`\`javascript
-// This is a code block
-function helloWorld() {
-  console.log('Hello, world!');
-}
-\`\`\`
-
-[This is a link](https://example.com)
-
-You can utilize a simpler word instead of a purple one. Click on highlights to fix them.
-
-Adverbs, passive voice, and other weakening phrases are marked in blue. I believe you should replace them with more forceful language.
-
-This sentence contains really obvious adverbs that should be highlighted clearly.
-`;
+  let markdown = `The park, which has been maintained by city workers for many years now, is a place where various types of flowers could potentially be seen. It might possibly be observed that families are often enjoying their time there, even though some parts of the park may still potentially be under construction. The benches that have been installed might possibly be used by people who could potentially want to sit down and watch their children as they play. It should be noted that the quality of the park, which has been taken care of by city employees for numerous years now, is often discussed among community members who could possibly have different opinions about the matter.`;
 
   let html = "";
   let highlightedHtml = "";
